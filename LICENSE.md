@@ -1,4 +1,4 @@
-# Velocity Executor - Best Executor for Roblox PC/Mobile
+# Velocity Executor - Best Executor for Roblox PC/Mobile | FREE
 
 ![Downloads](https://img.shields.io/badge/downloads-551K-blue?style=flat&logo=github) ![User Rating](https://img.shields.io/badge/rating-4.77%2F5-gold?style=flat&logo=star) ![Latest Version](https://img.shields.io/badge/version-4.7.2-green?style=flat&logo=github) ![License](https://img.shields.io/badge/license-MIT-purple?style=flat)
 
